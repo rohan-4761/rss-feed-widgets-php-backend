@@ -3,7 +3,7 @@
 class Feed
 {
     private $conn;
-    private $table = "news";
+    private $table = "feeds";
 
     public function __construct($db)
     {
@@ -42,7 +42,10 @@ class Feed
             }
         }
 
-        $query .= " ORDER BY published_at DESC LIMIT 10";
+        $query .= " ORDER BY published_at DESC";
+        if(!$conditions) {
+            $query .= " LIMIT 20"; // Default limit and offset
+        }
 
         $stmt = $this->conn->prepare($query);
 
