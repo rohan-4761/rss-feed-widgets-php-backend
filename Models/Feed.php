@@ -1,6 +1,7 @@
 <?php
 
-class Feed {
+class Feed
+{
     private $conn;
     private $table = "news";
 
@@ -9,18 +10,46 @@ class Feed {
         $this->conn = $db;
     }
 
-    public function getAllNews() {
-        $query = "SELECT * FROM {$this->table} LIMIT 5";
-        $stmt = $this->conn->prepare($query);
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
+    public function getFeeds($options = [], $apply_options = true)
+    {
+        $query = "SELECT * FROM {$this->table}";
+        $conditions = [];
+        $params = [];
+        if ($apply_options) {
 
+            if (!empty($options['search'])) {
+                $conditions[] = "(title LIKE :search OR source LIKE :search OR author LIKE :search)";
+                $params[':search'] = '%' . $options['search'] . '%';
+            }
 
-    public function filterAndGetNews($filter){
-        $query = "SELECT * FROM {$this->table} WHERE topic = :filter OR source = :filter OR author = :filter";
+            if (!empty($options['topic'])) {
+                $conditions[] = "topic = :topic";
+                $params[':topic'] = $options['topic'];
+            }
+
+            if (!empty($options['source'])) {
+                $conditions[] = "source = :source";
+                $params[':source'] = $options['source'];
+            }
+
+            if (!empty($options['author'])) {
+                $conditions[] = "author = :author";
+                $params[':author'] = $options['author'];
+            }
+
+            if ($conditions) {
+                $query .= " WHERE " . implode(" AND ", $conditions);
+            }
+        }
+
+        $query .= " ORDER BY published_at DESC LIMIT 10";
+
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(":filter", $filter);
+
+        foreach ($params as $key => $val) {
+            $stmt->bindValue($key, $val);
+        }
+
         $stmt->execute();
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);

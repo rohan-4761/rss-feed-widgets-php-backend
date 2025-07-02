@@ -10,26 +10,32 @@ $feedController = new FeedController($db);
 $requestMethod = $_SERVER["REQUEST_METHOD"];
 $requestUri = $_SERVER["REQUEST_URI"];
 
+$route = '';
 if (strpos($requestUri, '/signup') !== false) {
-    if ($requestMethod === 'POST') {
+    $route = 'signup';
+} elseif (strpos($requestUri, '/login') !== false) {
+    $route = 'login';
+} elseif (strpos($requestUri, '/feeds') !== false) {
+    $route = 'feeds';
+}
+
+$routeMethod = $route . '_' . $requestMethod;
+
+switch ($routeMethod) {
+    case 'signup_POST':
         $userController->createUser();
-    } else {
-        echo json_encode(["message" => "Method not allowed"]);
-    }
-} else if (strpos($requestUri, '/login') !== false){
-    if($requestMethod === "POST") {
+        break;
+
+    case 'login_POST':
         $userController->getUser();
-    }else {
-        echo json_encode(["message" => "Method not allowed"]);
-    }
-} else if((strpos($requestUri, '/feeds') !== false) && $requestMethod === "GET") {
-    if(empty($_GET) || !isset($_GET['filter'])) {
-        $feedController->getAllNews();
-    } else if ($_GET['filter']){
-        $filter = htmlspecialchars($_GET['filter']);
-        $feedController->filterAndGetNews($filter);
-    }
+        break;
+
+    case 'feeds_GET':
+        $feedController->getFeeds();
+        break;
+
+    default:
+        echo json_encode(["message" => "Route not found"]);
+        break;
 }
-else {
-    echo json_encode(["message" => "Route not found"]);
-}
+?>
