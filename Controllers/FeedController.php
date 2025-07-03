@@ -14,28 +14,33 @@ class FeedController
     }
 
 
-    public function getFeeds() {
+    public function getFeeds()
+    {
         // $data = json_decode(file_get_contents("php://input"), true);
         $options = [
             'search' => !empty($_GET['search']) ?  htmlspecialchars($_GET["search"]) : null,
-            'topic' => !empty($_GET['topic'] )?  htmlspecialchars($_GET["topic"]) : null,
+            'topic' => !empty($_GET['topic']) ?  htmlspecialchars($_GET["topic"]) : null,
             'source' => !empty($_GET['source']) ?  htmlspecialchars($_GET["source"]) : null,
             'author' => !empty($_GET['author']) ?  htmlspecialchars($_GET["author"]) : null,
         ];
-        try{
+        try {
 
             $feeds = $this->feedModel->getFeeds($options);
-            
-            if (!$feeds){
+
+            if (!$feeds) {
                 $allFeeds = $this->feedModel->getFeeds($options, false);
                 if (!$allFeeds) {
+                    header('Content-Type: application/json');
+
                     echo json_encode([
                         "success" => false,
                         'filter_applied' => $options,
                         "message" => "Unable to find feeds for you."
                     ]);
-                return;
+                    return;
                 } else {
+                    header('Content-Type: application/json');
+
                     echo json_encode([
                         'success' => true,
                         'data' => $allFeeds,
@@ -46,6 +51,8 @@ class FeedController
                     ]);
                 }
             } else {
+                header('Content-Type: application/json');
+
                 echo json_encode([
                     'success' => true,
                     'data' => $feeds,
@@ -55,13 +62,13 @@ class FeedController
                     'is_fallback' => false
                 ]);
             }
-    } catch(Exception $e){
-        header('Content-Type: application/json');
+        } catch (Exception $e) {
+            header('Content-Type: application/json');
             http_response_code(500);
             echo json_encode([
                 'success' => false,
                 'message' => 'Error filtering feeds: ' . $e->getMessage()
             ]);
+        }
     }
-}
 }
