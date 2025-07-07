@@ -1,8 +1,9 @@
 <?php
 
 require_once './Models/Feed.php';
+require_once './Controllers/BaseController.php';
 
-class FeedController
+class FeedController extends BaseController
 {
     private $db;
     private $feedModel;
@@ -15,7 +16,8 @@ class FeedController
 
 
     public function getFeeds()
-    {
+    {   
+        $user = $this->verifyToken();
         // $data = json_decode(file_get_contents("php://input"), true);
         $options = [
             'search' => !empty($_GET['search']) ?  htmlspecialchars($_GET["search"]) : null,
@@ -68,6 +70,28 @@ class FeedController
             echo json_encode([
                 'success' => false,
                 'message' => 'Error filtering feeds: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    public function getTopics()
+    {   
+        $user = $this->verifyToken();
+        try {
+            $topics = $this->feedModel->getTopics();
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => true,
+                'data' => $topics,
+                'count' => count($topics),
+                'message' => 'Topics retrieved successfully'
+            ]);
+        } catch (Exception $e) {
+            header('Content-Type: application/json');
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Error retrieving topics: ' . $e->getMessage()
             ]);
         }
     }

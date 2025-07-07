@@ -57,4 +57,12 @@ class Feed
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    public function getTopics()
+    {
+        $query = "SELECT DISTINCT topic FROM {$this->table} ORDER BY topic";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }
