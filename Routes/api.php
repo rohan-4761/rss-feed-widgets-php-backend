@@ -12,15 +12,14 @@ $requestMethod = $_SERVER["REQUEST_METHOD"];
 $requestUri = $_SERVER["REQUEST_URI"];
 
 $route = '';
-// echo "Entered api.php, $requestMethod; $requestUri";
 if (strpos($requestUri, '/signup') !== false) {
     $route = 'signup';
 } elseif (strpos($requestUri, '/login') !== false) {
     $route = 'login';
-} elseif (strpos($requestUri, '/feeds') !== false) {
-    $route = 'feeds';
 } elseif (strpos($requestUri, '/feeds/topics') !== false) {
     $route = 'topics';
+} elseif (strpos($requestUri, '/feeds') !== false) {
+    $route = 'feeds';
 } else {
     echo json_encode(["message" => "Route not found"]);
     exit;
@@ -42,6 +41,7 @@ switch ($routeMethod) {
         break;
     case 'topics_GET':
         $feedController->getTopics();
+        break;
     default:
         http_response_code(404);
         header('Content-Type: application/json');

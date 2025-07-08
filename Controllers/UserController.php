@@ -40,18 +40,19 @@ class UserController extends BaseController
             $user['id'] = password_hash($user['id'], PASSWORD_BCRYPT);
             unset($user['password']);
             $token = $this->generateToken($user);
-            setcookie('token', $token, [
-                'expires' => time() + 3600,
-                'path' => '/',
-                'secure' => false,
-                'httponly' => true,
-                'samesite' => 'Lax'
-            ]);
+            // setcookie('token', $token, [
+            //     'expires' => time() + 3600,
+            //     'path' => '/',
+            //     'secure' => true,
+            //     'httponly' => true,
+            //     'samesite' => 'None'
+            // ]);
             error_log("Cookie set: $token");
             header('Content-Type: application/json');
             http_response_code(200);
             echo json_encode([
                 "success" => true,
+                "token" => $token,
                 "message" => "Login successful",
                 "user" => $user,
             ]);
@@ -80,17 +81,18 @@ class UserController extends BaseController
                 $user['id'] = password_hash($user['id'], PASSWORD_BCRYPT);
                 unset($user['password']);
                 $token = $this->generateToken($user);
-                setcookie('token', $token, [
-                    'expires' => time() + 3600,
-                    'path' => '/',
-                    'secure' => false,
-                    'httponly' => true,
-                    'samesite' => 'Lax'
-                ]);
+                // setcookie('token', $token, [
+                //     'expires' => time() + 3600,
+                //     'path' => '/',
+                //     'secure' => true,
+                //     'httponly' => true,
+                //     'samesite' => 'None'
+                // ]);
                 error_log("Cookie set: $token");
                 header('Content-Type: application/json');
                 http_response_code(201);
                 echo json_encode([
+                    "token" => $token,
                     "success" => true,
                     "message" => "User created successfully.",
                     "user" => $user,
