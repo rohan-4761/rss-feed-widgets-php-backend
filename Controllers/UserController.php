@@ -2,6 +2,7 @@
 
 require_once './Models/User.php';
 require_once './Controllers/BaseController.php';
+require_once './Utils/cipherID.php';
 
 class UserController extends BaseController
 {
@@ -37,7 +38,7 @@ class UserController extends BaseController
         }
 
         if (password_verify($password, $user['password'])) {
-            $user['id'] = password_hash($user['id'], PASSWORD_BCRYPT);
+            $user['id'] = generateCipherID($user['id']);
             unset($user['password']);
             $token = $this->generateToken($user);
             // setcookie('token', $token, [
@@ -78,7 +79,7 @@ class UserController extends BaseController
                 ]);
             } else if ($this->userModel->createUser($data['name'], $data['email'], $data['password'])) {
                 $user = $this->userModel->getUser($data['email']);
-                $user['id'] = password_hash($user['id'], PASSWORD_BCRYPT);
+                $user['id'] = generateCipherID($user['id']);
                 unset($user['password']);
                 $token = $this->generateToken($user);
                 // setcookie('token', $token, [
