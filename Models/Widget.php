@@ -1,14 +1,17 @@
 <?php
 
-class Widget {
+class Widget
+{
     private $conn;
     private $table = "widgets";
 
-    public function __construct($db) {
+    public function __construct($db)
+    {
         $this->conn = $db;
     }
 
-    public function getWidgets($user_id, $widget_id = null) {
+    public function getWidgets($user_id, $widget_id = null)
+    {
         if ($widget_id) {
             $query = "SELECT * FROM {$this->table} WHERE user_id = :user_id AND id = :widget_id";
             $stmt = $this->conn->prepare($query);
@@ -21,14 +24,21 @@ class Widget {
         }
         $stmt->execute();
 
-        if ($stmt->rowCount() > 0) {
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } else {
-            return [];
+        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Decode JSON fields
+        foreach ($results as &$row) {
+            if (!empty($row['widget_data'])) {
+                $row['widget_data'] = json_decode($row['widget_data'], true);
+            }
         }
+
+        return $results;
     }
 
-    public function createWidget($user_id, $widget_data) {
+
+    public function createWidget($user_id, $widget_data)
+    {
         $json_data = json_encode($widget_data);
 
         $query = "INSERT INTO {$this->table} (user_id, widget_data) VALUES (:user_id, :widget_data)";
@@ -42,7 +52,8 @@ class Widget {
         return false;
     }
 
-    public function updateWidget($user_id, $widget_id, $widget_data) {
+    public function updateWidget($user_id, $widget_id, $widget_data)
+    {
         $json_data = json_encode($widget_data);
 
         $query = "UPDATE {$this->table} SET widget_data = :widget_data WHERE id = :widget_id AND user_id = :user_id";
@@ -57,7 +68,8 @@ class Widget {
         return false;
     }
 
-    public function deleteWidget($user_id, $widget_id) {
+    public function deleteWidget($user_id, $widget_id)
+    {
         $query = "DELETE FROM {$this->table} WHERE id = :widget_id AND user_id = :user_id";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":widget_id", $widget_id, PDO::PARAM_STR);
