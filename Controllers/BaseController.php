@@ -57,7 +57,7 @@ class BaseController
             'iss' => $_ENV['JWT_ISSUER'], // Issuer
             'aud' => $_ENV['JWT_AUDIENCE'], // Audience
             'iat' => time(), // Issued at
-            'exp' => time() + (60 * 60), // Expiration time (1 hour)
+            'exp' => time() + (60 * 60 * 10), // Expiration time (10 hour)
             'sub' => $user['id'], // Subject (user ID)
             'email' => $user['user_email'],
             'name' => $user['user_name']

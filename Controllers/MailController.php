@@ -1,8 +1,19 @@
 <?php
 
+require './Config/mail.php';
+
 class MailController
-{   private function getPurposeText($purpose) {
-        switch($purpose) {
+{
+    private $mail;
+
+    private function __construct()
+    {
+        $this->mail = new MailConfig();
+    }
+
+    private function getPurposeText($purpose)
+    {
+        switch ($purpose) {
             case 'registration':
                 return 'Thank you for registering! Please use the following code to verify your account:';
             case 'login':
@@ -85,14 +96,19 @@ class MailController
 
     public function sendOTPEmail($email, $otpCode, $purpose = 'verification')
     {
-        $subject = $this->getEmailSubject($purpose);
-        $message = $this->getEmailTemplate($otpCode, $purpose);
+        try {
 
-        // Email headers
-        $headers = "MIME-Version: 1.0" . "\r\n";
-        $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
-        $headers .= "From: noreply@yoursite.com" . "\r\n";
-
-        return mail($email, $subject, $message, $headers);
+            $emailExist = $this->mail->checkEmailExists($email);
+            if ($emailExist) {
+                $subject = $this->getEmailSubject($purpose);
+                $message = $this->getEmailTemplate($otpCode, $purpose);
+                $result = $this->mail->sendEmail($email, $subject, $message);
+                if (!$result['success']) {
+                    return $result;
+                }
+            }
+        } catch (Exception $e) {
+            return ["success" => False, "message" => $e->getMessage()];
+        }
     }
 }

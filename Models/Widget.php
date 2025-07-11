@@ -37,19 +37,19 @@ class Widget
     }
 
 
-    public function createWidget($user_id, $widget_data)
+    public function createWidget($user_id, $widget_data, $widget_title)
     {
         $json_data = json_encode($widget_data);
 
-        $query = "INSERT INTO {$this->table} (user_id, widget_data) VALUES (:user_id, :widget_data)";
+        $query = "INSERT INTO {$this->table} (user_id, widget_title, widget_data) 
+              VALUES (:user_id, :widget_title, :widget_data)";
+
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":user_id", $user_id, PDO::PARAM_STR);
+        $stmt->bindParam(":widget_title", $widget_title, PDO::PARAM_STR);
         $stmt->bindParam(":widget_data", $json_data, PDO::PARAM_STR);
 
-        if ($stmt->execute()) {
-            return true;
-        }
-        return false;
+        return $stmt->execute();
     }
 
     public function updateWidget($user_id, $widget_id, $widget_data)

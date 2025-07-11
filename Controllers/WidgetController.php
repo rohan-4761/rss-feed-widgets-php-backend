@@ -67,7 +67,8 @@ class WidgetController extends BaseController {
             
     }
 
-    public function createWidget() {
+    public function createWidget()
+    {
         try {
             $user = $this->verifyToken();
             if (!$user) {
@@ -80,21 +81,29 @@ class WidgetController extends BaseController {
                 echo json_encode(['success' => false, 'message' => 'User ID is invalid or missing']);
                 return;
             }
+
             $userId = decryptCipherID($user['sub']);
+
             $data = json_decode(file_get_contents('php://input'), true);
-            if (empty($data['widget_data'])) {
+
+            if (empty($data['widget_data']) || empty($data['widget_data']['widgetTitle'])) {
                 http_response_code(400);
-                echo json_encode(['success' => false, 'message' => 'Widget data is required']);
+                echo json_encode(['success' => false, 'message' => 'Widget data and title are required']);
                 return;
             }
+
             $widgetData = $data['widget_data'];
-            if ($this->widgetModel->createWidget($userId, $widgetData)) {
+            $widgetTitle = $widgetData['widgetTitle'];
+            unset($widgetData['widgetTitle']);
+
+            if ($this->widgetModel->createWidget($userId, $widgetData, $widgetTitle)) {
                 http_response_code(201);
                 echo json_encode(['success' => true, 'message' => 'Widget created successfully']);
             } else {
                 http_response_code(500);
                 echo json_encode(['success' => false, 'message' => 'Failed to create widget']);
             }
+
         } catch (Exception $e) {
             http_response_code(500);
             echo json_encode(['success' => false, 'message' => 'Internal Server Error']);
