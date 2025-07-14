@@ -4,31 +4,58 @@ require_once './Models/Widget.php';
 require_once './Controllers/BaseController.php';
 require_once './Utils/cipherID.php';
 
-class WidgetController extends BaseController {
+class WidgetController extends BaseController
+{
     private $db;
     private $widgetModel;
 
-    public function __construct($db) {
+    public function __construct($db)
+    {
         $this->db = $db;
         $this->widgetModel = new Widget($db);
     }
 
-    public function getWidgets() {
-        try{
-            $user = $this->verifyToken();
-            if (!$user) {
-                http_response_code(401);
-                echo json_encode(['success' => false, 'message' => 'Unauthorized']);
-                return;
+    public function getWidgets()
+    {
+        try {
+
+            $skipVerification = false;
+
+            if (isset($_SERVER['HTTP_X_EMBED_REQUEST']) && $_SERVER['HTTP_X_EMBED_REQUEST'] === 'true') {
+                $skipVerification = true;
             }
-            if (empty($user['sub'])) {
-                http_response_code(400);
-                echo json_encode(['success' => false, 'message' => 'User ID is invalid or missing']);
-                return;
+            if (!$skipVerification) {
+                $user = $this->verifyToken();
+                if (!$user) {
+                    http_response_code(401);
+                    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+                    return;
+                }
+                if (empty($user['sub'])) {
+                    http_response_code(400);
+                    echo json_encode(['success' => false, 'message' => 'User ID is invalid or missing']);
+                    return;
+                }
+                $userId = decryptCipherID($user['sub']);
+            } else {
+                $userId = null;
+                if (empty($_GET['widget_id'])) {
+                    http_response_code(400);
+                    echo json_encode(['success' => false, 'message' => 'Widget ID is invalid or missing']);
+                    return;
+                }
             }
-            $userId = decryptCipherID($user['sub']);
-            if (empty($_GET['widget_id'])) {
-                $widgets = $this->widgetModel->getWidgets($userId);
+            if (empty($_GET['widget_id']) && !is_null($userId)) {
+                $widgets = $this->widgetModel->getWidgets(user_id: $userId);
+            } else if (is_null($userId) && !empty($_GET['widget_id'])) {
+                $encryptedWidgetId = htmlspecialchars($_GET['widget_id']);
+                $widgetId = decryptCipherID($encryptedWidgetId);
+                if (!$widgetId) {
+                    http_response_code(400);
+                    echo json_encode(['success' => false, 'message' => 'Invalid widget ID']);
+                    return;
+                }
+                $widgets = $this->widgetModel->getWidgets(widget_id: $widgetId);
             } else {
                 $encryptedWidgetId = htmlspecialchars($_GET['widget_id']);
                 $widgetId = decryptCipherID($encryptedWidgetId);
@@ -64,7 +91,6 @@ class WidgetController extends BaseController {
             echo json_encode(['success' => false, 'message' => 'Internal Server Error']);
             return;
         }
-            
     }
 
     public function createWidget()
@@ -103,14 +129,14 @@ class WidgetController extends BaseController {
                 http_response_code(500);
                 echo json_encode(['success' => false, 'message' => 'Failed to create widget']);
             }
-
         } catch (Exception $e) {
             http_response_code(500);
             echo json_encode(['success' => false, 'message' => 'Internal Server Error']);
         }
     }
 
-    public function updateWidget() {
+    public function updateWidget()
+    {
         try {
             $user = $this->verifyToken();
             if (!$user) {
@@ -145,7 +171,8 @@ class WidgetController extends BaseController {
         }
     }
 
-    public function deleteWidget() {
+    public function deleteWidget()
+    {
         try {
             $user = $this->verifyToken();
             if (!$user) {

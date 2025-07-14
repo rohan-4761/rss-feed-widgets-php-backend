@@ -10,18 +10,30 @@ class Widget
         $this->conn = $db;
     }
 
-    public function getWidgets($user_id, $widget_id = null)
-    {
-        if ($widget_id) {
-            $query = "SELECT * FROM {$this->table} WHERE user_id = :user_id AND id = :widget_id";
-            $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(":user_id", $user_id);
-            $stmt->bindParam(":widget_id", $widget_id);
-        } else {
-            $query = "SELECT * FROM {$this->table} WHERE user_id = :user_id";
-            $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(":user_id", $user_id);
+    public function getWidgets($user_id=null, $widget_id = null)
+    {   
+
+        $query = "SELECT * FROM {$this->table}";
+        $conditions = [];
+        $params = [];
+        
+        if (!is_null($user_id)) {
+            $conditions[] = "user_id = :user_id";
+            $params[":user_id"] = $user_id;
         }
+        if (!is_null($widget_id)){
+            $conditions[] = "id = :widget_id";
+            $params[":widget_id"] = $widget_id;
+        }
+        if ($conditions) {
+            $query .= " WHERE " . implode(" AND ", $conditions);
+        }
+
+        $stmt = $this->conn->prepare($query);
+        foreach($params as $key => $val){
+            $stmt->bindValue($key, $val);
+        }
+
         $stmt->execute();
 
         $results = $stmt->fetchAll(PDO::FETCH_ASSOC);

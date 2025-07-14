@@ -41,13 +41,6 @@ class UserController extends BaseController
             $user['id'] = generateCipherID($user['id']);
             unset($user['password']);
             $token = $this->generateToken($user);
-            // setcookie('token', $token, [
-            //     'expires' => time() + 3600,
-            //     'path' => '/',
-            //     'secure' => true,
-            //     'httponly' => true,
-            //     'samesite' => 'None'
-            // ]);
             error_log("Cookie set: $token");
             header('Content-Type: application/json');
             http_response_code(200);
@@ -82,13 +75,6 @@ class UserController extends BaseController
                 $user['id'] = generateCipherID($user['id']);
                 unset($user['password']);
                 $token = $this->generateToken($user);
-                // setcookie('token', $token, [
-                //     'expires' => time() + 3600,
-                //     'path' => '/',
-                //     'secure' => true,
-                //     'httponly' => true,
-                //     'samesite' => 'None'
-                // ]);
                 error_log("Cookie set: $token");
                 header('Content-Type: application/json');
                 http_response_code(201);

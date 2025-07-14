@@ -9,7 +9,7 @@ class Feed
     {
         $this->conn = $db;
     }
-
+    
     public function getFeeds($options = [], $apply_options = true)
     {
         $query = "SELECT * FROM {$this->table}";

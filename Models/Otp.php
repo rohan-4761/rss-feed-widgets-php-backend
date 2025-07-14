@@ -23,24 +23,24 @@ class Otp
     }
 
 
-    private function invalidateExistingOtps($userId, $purpose)
+    private function invalidateExistingOtps($email, $purpose)
     {
-        $query = "UPDATE {$this->table} SET is_used = TRUE WHERE user_id = :user_id AND purpose = :purpose AND is_used = FALSE";
+        $query = "UPDATE {$this->table} SET is_used = TRUE WHERE user_email = :user_email AND purpose = :purpose AND is_used = FALSE";
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(":user_id", $userId);
+        $stmt->bindParam(":user_email", $email);
         $stmt->bindParam(":purpose", $purpose);
         $stmt->execute();
     }
 
-    public function storeOTP($userId, $otpCode, $purpose = "registration")
+    public function storeOTP($email, $otpCode, $purpose = "registration")
     {
-        $this->invalidateExistingOtps($userId, $purpose);
+        $this->invalidateExistingOtps($email, $purpose);
 
         $expiresAt = date('Y-m-d H:i:s', time() + $this->otpExpiry);
-        $query = "INSERT INTO {$this->table} (user_id, otp_code, purpose, expires_at) VALUES (:user_id, :otp_code, :purpose, :expires_at)";
+        $query = "INSERT INTO {$this->table} (user_email, otp_code, purpose, expires_at) VALUES (:user_email, :otp_code, :purpose, :expires_at)";
         try {
             $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(":user_id", $userId);
+            $stmt->bindParam(":user_email", $email);
             $stmt->bindParam(":otp_code", $otpCode);
             $stmt->bindParam(":purpose", $purpose);
             $stmt->bindParam(":expires_at", $expiresAt);
@@ -52,12 +52,12 @@ class Otp
         }
     }
 
-    private function incrementAttempts($userId, $otpCode, $purpose)
+    private function incrementAttempts($email, $otpCode, $purpose)
     {
         $query = "UPDATE otps SET attempts = attempts + 1 
-                WHERE user_id = :user_id AND otp_code = :otp_code AND purpose = :purpose AND is_used = FALSE";
+                WHERE user_email = :user_email AND otp_code = :otp_code AND purpose = :purpose AND is_used = FALSE";
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(":user_id", $userId);
+        $stmt->bindParam(":user_email", $email);
         $stmt->bindParam(":otp_code", $otpCode);
         $stmt->bindParam(":purpose", $purpose);
         $stmt->execute();
@@ -84,29 +84,29 @@ class Otp
         }
     }
 
-    public function canRequestNewOTP($userId, $purpose = 'registration')
+    public function canRequestNewOTP($email, $purpose = 'registration')
     {
         $query = "SELECT COUNT(*) as count FROM otps 
-                WHERE user_id = :user_id AND purpose = :purpose AND created_at > DATE_SUB(NOW(), INTERVAL 1 MINUTE)";
+                WHERE user_email = :user_email AND purpose = :purpose AND created_at > DATE_SUB(NOW(), INTERVAL 1 MINUTE)";
 
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(":user_id", $userId);
+        $stmt->bindParam(":user_email", $email);
         $stmt->bindParam(":purpose", $purpose);
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
 
         return $result['count'] < 3; // Max 3 OTPs per minute
     }
 
-    public function verifyOTP($userId, $otpCode, $purpose = "registration")
+    public function verifyOTP($email, $otpCode, $purpose = "registration")
     {
-        $this->incrementAttempts($userId, $otpCode, $purpose);
+        $this->incrementAttempts($email, $otpCode, $purpose);
         $query = "SELECT * FROM {$this->table} 
-                WHERE user_id = :user_id AND otp_code = :otp_code AND purpose = :purpose 
+                WHERE user_email = :user_email AND otp_code = :otp_code AND purpose = :purpose 
                 AND is_used = FALSE AND expires_at > NOW()
                 ORDER BY created_at DESC LIMIT 1";
         try {
             $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(":user_id", $userId);
+            $stmt->bindParam(":user_email", $email);
             $stmt->bindParam(":otp_code", $otpCode);
             $stmt->bindParam(":purpose", $purpose);
             $stmt->execute();

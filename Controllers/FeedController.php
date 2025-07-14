@@ -16,8 +16,20 @@ class FeedController extends BaseController
 
 
     public function getFeeds()
-    {   
-        $user = $this->verifyToken();
+    {
+
+        $skipVerification = false;
+
+        if (isset($_SERVER['HTTP_X_EMBED_REQUEST']) && $_SERVER['HTTP_X_EMBED_REQUEST'] === 'true') {
+            $skipVerification = true;
+        }
+        if (!$skipVerification) {
+
+            $user = $this->verifyToken();
+        } else {
+            $user = null;
+        }
+
         // $data = json_decode(file_get_contents("php://input"), true);
         $options = [
             'search' => !empty($_GET['search']) ?  htmlspecialchars($_GET["search"]) : null,
@@ -75,7 +87,7 @@ class FeedController extends BaseController
     }
 
     public function getTopics()
-    {   
+    {
         $user = $this->verifyToken();
         try {
             $topics = $this->feedModel->getTopics();

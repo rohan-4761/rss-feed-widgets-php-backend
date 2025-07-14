@@ -1,8 +1,8 @@
 <?php
 
-require_once "./BaseController.php";
+require_once "./Controllers/BaseController.php";
 require_once "./Models/Otp.php";
-require_once "./MailController.php";
+require_once "./Controllers/MailController.php";
 
 class OtpController extends BaseController{
     private $db;
@@ -16,21 +16,18 @@ class OtpController extends BaseController{
         $this->mailController = new MailController();
     }
 
-    public function generateAndSendOTP($userId, $email, $purpose = 'registration') {
-        // Check rate limiting
-        if (!$this->otpModel->canRequestNewOTP($userId, $purpose)) {
+    public function generateAndSendOTP($email, $purpose = 'registration') {
+
+        if (!$this->otpModel->canRequestNewOTP($email, $purpose)) {
             return [
                 'success' => false,
                 'message' => 'Too many OTP requests. Please wait before requesting again.'
             ];
         }
         
-        // Generate OTP
         $otpCode = $this->otpModel->generateOTP();
         
-        // Store OTP in database
-        if ($this->otpModel->storeOTP($userId, $otpCode, $purpose)) {
-            // Send OTP via email
+        if ($this->otpModel->storeOTP($email, $otpCode, $purpose)) {
             if ($this->mailController->sendOTPEmail($email, $otpCode, $purpose)) {
                 return [
                     'success' => true,
@@ -50,8 +47,8 @@ class OtpController extends BaseController{
         }
     }
 
-    public function verifyOTP($userId, $otpCode, $purpose = 'registration') {
-        return $this->otpModel->verifyOTP($userId, $otpCode, $purpose);
+    public function verifyOTP($email, $otpCode, $purpose = 'registration') {
+        return $this->otpModel->verifyOTP($email, $otpCode, $purpose);
     }
     
     // Handle API request to generate OTP
@@ -60,13 +57,12 @@ class OtpController extends BaseController{
         
         $input = json_decode(file_get_contents('php://input'), true);
         
-        if (!isset($input['user_id']) || !isset($input['email'])) {
+        if (!isset($input['email'])) {
             http_response_code(400);
             echo json_encode(['success' => false, 'message' => 'Missing required fields']);
             return;
         }
         
-        $userId = $input['user_id'];
         $email = filter_var($input['email'], FILTER_VALIDATE_EMAIL);
         $purpose = $input['purpose'] ?? 'registration';
         
@@ -76,7 +72,7 @@ class OtpController extends BaseController{
             return;
         }
         
-        $result = $this->generateAndSendOTP($userId, $email, $purpose);
+        $result = $this->generateAndSendOTP($email, $purpose);
         echo json_encode($result);
     }
 
@@ -85,17 +81,17 @@ class OtpController extends BaseController{
         
         $input = json_decode(file_get_contents('php://input'), true);
         
-        if (!isset($input['user_id']) || !isset($input['otp_code'])) {
+        if (!isset($input['email']) || !isset($input['otp_code'])) {
             http_response_code(400);
             echo json_encode(['success' => false, 'message' => 'Missing required fields']);
             return;
         }
         
-        $userId = $input['user_id'];
+        $email = $input['email'];
         $otpCode = $input['otp_code'];
         $purpose = $input['purpose'] ?? 'registration';
         
-        $result = $this->verifyOTP($userId, $otpCode, $purpose);
+        $result = $this->verifyOTP($email, $otpCode, $purpose);
         echo json_encode($result);
     }
 }
