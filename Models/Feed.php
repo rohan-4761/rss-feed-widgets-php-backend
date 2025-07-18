@@ -9,7 +9,7 @@ class Feed
     {
         $this->conn = $db;
     }
-    
+
     public function getFeeds($options = [], $apply_options = true)
     {
         $query = "SELECT * FROM {$this->table}";
@@ -43,15 +43,21 @@ class Feed
         }
 
         $query .= " ORDER BY published_at DESC";
-        if(!$conditions) {
-            $query .= " LIMIT 20"; // Default limit and offset
+
+        if (!empty($options['limit'])) {
+            $limit = (int)$options['limit']; // Ensure it's an integer
+            $query .= " LIMIT {$limit}";
+        } else {
+            $query .= " LIMIT 10";
         }
 
         $stmt = $this->conn->prepare($query);
 
         foreach ($params as $key => $val) {
-            $stmt->bindValue($key, $val);
+            $paramType = is_int($val) ? PDO::PARAM_INT : PDO::PARAM_STR;
+            $stmt->bindValue($key, $val, $paramType);
         }
+
 
         $stmt->execute();
 
