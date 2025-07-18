@@ -15,12 +15,55 @@ class WidgetController extends BaseController
         $this->widgetModel = new Widget($db);
     }
 
-    public function getWidgets()
+    public function getWidgetsByUser()
+    {
+        $widgets = null;
+        try {
+            $user = $this->verifyToken();
+            if (!$user) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+                return;
+            }
+            if (empty($user['sub'])) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'User ID is invalid or missing']);
+                return;
+            }
+            $userId = decryptCipherID($user['sub']);
+            $widgets = $this->widgetModel->selectWidgetsByUserId($userId);
+            if ($widgets) {
+                foreach ($widgets as &$widget) {
+                    $widget['id'] = generateCipherID($widget['id']);
+                    unset($widget['userId']);
+                }
+                header('Content-Type: application/json');
+                http_response_code(200);
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Widgets retrieved successfully',
+                    'widgets' => $widgets
+                ]);
+            } else {
+                http_response_code(404);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'No widgets found Click on the button above to create a new widget.'
+                ]);
+            }
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Internal Server Error']);
+            return;
+        }
+    }
+
+    public function getWidgetById()
     {
         try {
-
+            $widgets = null;
+            $userId = null;
             $skipVerification = false;
-
             if (isset($_SERVER['HTTP_X_EMBED_REQUEST']) && $_SERVER['HTTP_X_EMBED_REQUEST'] === 'true') {
                 $skipVerification = true;
             }
@@ -38,45 +81,45 @@ class WidgetController extends BaseController
                 }
                 $userId = decryptCipherID($user['sub']);
             } else {
-                $userId = null;
                 if (empty($_GET['widget_id'])) {
                     http_response_code(400);
                     echo json_encode(['success' => false, 'message' => 'Widget ID is invalid or missing']);
                     return;
                 }
             }
-            if (empty($_GET['widget_id']) && !is_null($userId)) {
-                $widgets = $this->widgetModel->getWidgets(user_id: $userId);
-            } else if (is_null($userId) && !empty($_GET['widget_id'])) {
-                $encryptedWidgetId = htmlspecialchars($_GET['widget_id']);
-                $widgetId = decryptCipherID($encryptedWidgetId);
-                if (!$widgetId) {
-                    http_response_code(400);
-                    echo json_encode(['success' => false, 'message' => 'Invalid widget ID']);
-                    return;
-                }
-                $widgets = $this->widgetModel->getWidgets(widget_id: $widgetId);
-            } else {
-                $encryptedWidgetId = htmlspecialchars($_GET['widget_id']);
-                $widgetId = decryptCipherID($encryptedWidgetId);
-                if (!$widgetId) {
-                    http_response_code(400);
-                    echo json_encode(['success' => false, 'message' => 'Invalid widget ID']);
-                    return;
-                }
-                $widgets = $this->widgetModel->getWidgets($userId, $widgetId);
+
+            $encryptedWidgetId = htmlspecialchars($_GET['widget_id']);
+            $widgetId = decryptCipherID($encryptedWidgetId);
+            if (!$widgetId) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Invalid widget ID']);
+                return;
             }
-            if ($widgets) {
-                foreach ($widgets as &$widget) {
-                    $widget['id'] = generateCipherID($widget['id']);
-                    unset($widget['user_id']); // Remove user_id from the response
+            if (!is_null($userId)) {
+                $widgetBelongsToUser = false;
+                $userWidgets = $this->widgetModel->selectWidgetsByUserId($userId);
+                foreach ($userWidgets as $userWidget) {
+                    if ($userWidget['id'] == $widgetId) {
+                        $widgetBelongsToUser = true;
+                    }
                 }
+                if (!$widgetBelongsToUser) {
+                    http_response_code(403);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Requested Widget is not accessible.'
+                    ]);
+                }
+            }
+            $widgets = $this->widgetModel->selectWidgetsById($widgetId);
+            if ($widgets) {
+                $widgets['id'] = generateCipherID($widgets['id']);
+                unset($widget['user_id']);
                 header('Content-Type: application/json');
                 http_response_code(200);
                 echo json_encode([
                     'success' => true,
                     'message' => 'Widgets retrieved successfully',
-                    'method' => empty($_GET['widget_id']) ? 'get_all' : 'get_single',
                     'widgets' => $widgets
                 ]);
             } else {
@@ -112,17 +155,25 @@ class WidgetController extends BaseController
 
             $data = json_decode(file_get_contents('php://input'), true);
 
-            if (empty($data['widget_data']) || empty($data['widget_data']['widgetTitle'])) {
+            if (empty($data['widget_data'])) {
                 http_response_code(400);
-                echo json_encode(['success' => false, 'message' => 'Widget data and title are required']);
+                echo json_encode(['success' => false, 'message' => 'Widget data is required']);
                 return;
             }
 
-            $widgetData = $data['widget_data'];
-            $widgetTitle = $widgetData['widgetTitle'];
-            unset($widgetData['widgetTitle']);
+            $widgetData = [
+                "userId" => $userId,
+                'widgetTitle' => $data['widget_data']['widgetTitle'],
+                'feedURL' => $data['widget_data']['feedURL'],
+                'topic' => $data['widget_data']['topic'] ?? null,
+                'rssFeed' => $data['widget_data']['rssFeed'] ?? null,
+                'widgetLayout' => $data['widget_data']['widgetLayout'],
+                'general' => json_encode($data['widget_data']['general']),
+                'feedTitle' => json_encode($data['widget_data']['feedTitle']),
+                'feedContent' => json_encode($data['widget_data']['feedContent'])
+            ];
 
-            if ($this->widgetModel->createWidget($userId, $widgetData, $widgetTitle)) {
+            if ($this->widgetModel->create($widgetData)) {
                 http_response_code(201);
                 echo json_encode(['success' => true, 'message' => 'Widget created successfully']);
             } else {

@@ -10,56 +10,51 @@ class Widget
         $this->conn = $db;
     }
 
-    public function getWidgets($user_id=null, $widget_id = null)
-    {   
-
-        $query = "SELECT * FROM {$this->table}";
-        $conditions = [];
-        $params = [];
-        
-        if (!is_null($user_id)) {
-            $conditions[] = "user_id = :user_id";
-            $params[":user_id"] = $user_id;
-        }
-        if (!is_null($widget_id)){
-            $conditions[] = "id = :widget_id";
-            $params[":widget_id"] = $widget_id;
-        }
-        if ($conditions) {
-            $query .= " WHERE " . implode(" AND ", $conditions);
-        }
-
+    public function selectWidgetsByUserId($userId)
+    {
+        $query = "SELECT id, widgetTitle, feedURL, rssFeed, createdAt, updatedAt 
+                    FROM {$this->table}
+                    WHERE userId = :userId";
         $stmt = $this->conn->prepare($query);
-        foreach($params as $key => $val){
-            $stmt->bindValue($key, $val);
-        }
-
+        $stmt->bindParam(':userId', $userId);
         $stmt->execute();
 
-        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        // Decode JSON fields
-        foreach ($results as &$row) {
-            if (!empty($row['widget_data'])) {
-                $row['widget_data'] = json_decode($row['widget_data'], true);
-            }
-        }
-
-        return $results;
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-
-    public function createWidget($user_id, $widget_data, $widget_title)
+    public function selectWidgetsById($widgetId)
     {
-        $json_data = json_encode($widget_data);
+        $query = "SELECT * FROM {$this->table} WHERE id=:widgetId";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':widgetId', $widgetId);
+        $stmt->execute();
 
-        $query = "INSERT INTO {$this->table} (user_id, widget_title, widget_data) 
-              VALUES (:user_id, :widget_title, :widget_data)";
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        $result['general'] = json_decode($result['general'], true);
+        $result['feedTitle'] = json_decode($result['feedTitle'], true);
+        $result['feedContent'] = json_decode($result['feedContent'], true);
+
+        return $result;
+    }
+
+    public function create($data)
+    {
+        $query = "INSERT INTO {$this->table}
+            (userId, widgetTitle, feedURL, topic, rssFeed, widgetLayout, general, feedTitle, feedContent) 
+            VALUES 
+            (:userId, :widgetTitle, :feedURL, :topic, :rssFeed, :widgetLayout, :general, :feedTitle, :feedContent)";
 
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(":user_id", $user_id, PDO::PARAM_STR);
-        $stmt->bindParam(":widget_title", $widget_title, PDO::PARAM_STR);
-        $stmt->bindParam(":widget_data", $json_data, PDO::PARAM_STR);
+
+        $stmt->bindParam(':userId', $data['userId']);
+        $stmt->bindParam(':widgetTitle', $data['widgetTitle']);
+        $stmt->bindParam(':feedURL', $data['feedURL']);
+        $stmt->bindParam(':topic', $data['topic']);
+        $stmt->bindParam(':rssFeed', $data['rssFeed']);
+        $stmt->bindParam(':widgetLayout', $data['widgetLayout']);
+        $stmt->bindParam(':general', $data['general']);
+        $stmt->bindParam(':feedTitle', $data['feedTitle']);
+        $stmt->bindParam(':feedContent', $data['feedContent']);
 
         return $stmt->execute();
     }
@@ -78,6 +73,34 @@ class Widget
             return true;
         }
         return false;
+    }
+
+    public function update($widgetId, $updatedFields, $updatedData)
+    {
+        $setClause = [];
+        foreach ($updatedFields as $field) {
+            $setClause[] = "`$field` = :$field";
+        }
+
+        $setString = implode(', ', $setClause);
+
+        $query = "UPDATE " . $this->table . " SET $setString WHERE widgetId = :widgetId";
+
+        $stmt = $this->conn->prepare($query);
+
+        $stmt->bindParam(':widgetId', $widgetId, PDO::PARAM_INT);
+
+        foreach ($updatedFields as $field) {
+            $value = $updatedData[$field];
+
+            if (in_array($field, ['general', 'feedTitle', 'feedContent']) && is_array($value)) {
+                $value = json_encode($value);
+            }
+
+            $stmt->bindValue(":$field", $value);
+        }
+
+        return $stmt->execute();
     }
 
     public function deleteWidget($user_id, $widget_id)

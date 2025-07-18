@@ -21,6 +21,8 @@ if (strpos($requestUri, '/signup') !== false) {
     $route = 'topics';
 } elseif (strpos($requestUri, '/feeds') !== false) {
     $route = 'feeds';
+} elseif (strpos($requestUri, '/widgets/widgetID') !== false) {
+    $route = 'widget';
 } elseif (strpos($requestUri, '/widgets') !== false) {
     $route = 'widgets';
 } else {
@@ -44,15 +46,18 @@ switch ($routeMethod) {
         $feedController->getTopics();
         break;
     case 'widgets_GET':
-        $widgetController->getWidgets();
+        $widgetController->getWidgetsByUser();
         break;
-    case 'widgets_POST':
+    case 'widget_GET':
+        $widgetController->getWidgetById();
+        break;
+    case 'widget_POST':
         $widgetController->createWidget();
         break;
-    case 'widgets_PUT':
+    case 'widget_PUT':
         $widgetController->updateWidget();
         break;
-    case 'widgets_DELETE':
+    case 'widget_DELETE':
         $widgetController->deleteWidget();
         break;
     default:
