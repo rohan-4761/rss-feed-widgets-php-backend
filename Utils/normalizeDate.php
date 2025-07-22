@@ -4,6 +4,6 @@ function normalizePubDate($rawDate) {
         $date = new DateTime($rawDate);
         return $date->format('Y-m-d H:i:s');
     } catch (Exception $e) {
-        return ""; // or fallback default
+        return ""; 
     }
 }

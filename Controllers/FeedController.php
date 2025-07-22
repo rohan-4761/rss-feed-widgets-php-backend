@@ -108,7 +108,7 @@ class FeedController extends BaseController
             http_response_code(500);
             echo json_encode([
                 'success' => false,
-                'message' => 'Error filtering feeds: ' . $e->getMessage()
+                'errorMessage' => 'Error filtering feeds: ' . $e->getMessage()
             ]);
         }
     }
@@ -124,7 +124,7 @@ class FeedController extends BaseController
             if (!$rss || !isset($rss->channel->item)) {
                 return [
                     "success" => false,
-                    "message" => "Invalid or empty RSS feed."
+                    "errorMessage" => "Invalid or empty RSS feed."
                 ];
             }
 
@@ -160,7 +160,7 @@ class FeedController extends BaseController
             http_response_code(500);
             echo json_encode([
                 'success' => false,
-                'message' => 'Error filtering feeds: ' . $e->getMessage()
+                'errorMessage' => 'Error filtering feeds: ' . $e->getMessage()
             ]);
         }
     }
@@ -241,7 +241,7 @@ class FeedController extends BaseController
             http_response_code(500);
             echo json_encode([
                 'success' => false,
-                'message' => 'Error retrieving topics: ' . $e->getMessage()
+                'errorMessage' => 'Error retrieving topics: ' . $e->getMessage()
             ]);
         }
     }

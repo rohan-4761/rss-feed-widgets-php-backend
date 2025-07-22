@@ -59,23 +59,7 @@ class Widget
         return $stmt->execute();
     }
 
-    public function updateWidget($user_id, $widget_id, $widget_data)
-    {
-        $json_data = json_encode($widget_data);
-
-        $query = "UPDATE {$this->table} SET widget_data = :widget_data WHERE id = :widget_id AND user_id = :user_id";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(":widget_data", $json_data, PDO::PARAM_STR);
-        $stmt->bindParam(":widget_id", $widget_id, PDO::PARAM_STR);
-        $stmt->bindParam(":user_id", $user_id, PDO::PARAM_STR);
-
-        if ($stmt->execute()) {
-            return true;
-        }
-        return false;
-    }
-
-    public function update($widgetId, $updatedFields, $updatedData)
+    public function update($userId, $widgetId, $updatedFields, $updatedData)
     {
         $setClause = [];
         foreach ($updatedFields as $field) {
@@ -84,11 +68,13 @@ class Widget
 
         $setString = implode(', ', $setClause);
 
-        $query = "UPDATE " . $this->table . " SET $setString WHERE widgetId = :widgetId";
+        $query = "UPDATE " . $this->table . " SET $setString WHERE id = :widgetId AND userId = :userId";
 
         $stmt = $this->conn->prepare($query);
 
         $stmt->bindParam(':widgetId', $widgetId, PDO::PARAM_INT);
+        $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
+        error_log("Final Query: $query");
 
         foreach ($updatedFields as $field) {
             $value = $updatedData[$field];
@@ -96,19 +82,24 @@ class Widget
             if (in_array($field, ['general', 'feedTitle', 'feedContent']) && is_array($value)) {
                 $value = json_encode($value);
             }
+            error_log("Binding :$field with value: " . print_r($value, true));
 
             $stmt->bindValue(":$field", $value);
         }
-
-        return $stmt->execute();
+        try {
+            return $stmt->execute();
+        } catch (PDOException $e) {
+            error_log("PDO Error: " . $e->getMessage());
+            return false;
+        }
     }
 
     public function deleteWidget($user_id, $widget_id)
     {
-        $query = "DELETE FROM {$this->table} WHERE id = :widget_id AND user_id = :user_id";
+        $query = "DELETE FROM {$this->table} WHERE id = :widget_id AND userId = :userId";
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(":widget_id", $widget_id, PDO::PARAM_STR);
-        $stmt->bindParam(":user_id", $user_id, PDO::PARAM_STR);
+        $stmt->bindParam(":widget_id", $widget_id, PDO::PARAM_INT);
+        $stmt->bindParam(":userId", $user_id, PDO::PARAM_INT);
 
         if ($stmt->execute()) {
             return true;

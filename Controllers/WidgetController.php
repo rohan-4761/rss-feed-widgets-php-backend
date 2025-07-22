@@ -22,12 +22,12 @@ class WidgetController extends BaseController
             $user = $this->verifyToken();
             if (!$user) {
                 http_response_code(401);
-                echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+                echo json_encode(['success' => false, 'errorMessage' => 'Unauthorized']);
                 return;
             }
             if (empty($user['sub'])) {
                 http_response_code(400);
-                echo json_encode(['success' => false, 'message' => 'User ID is invalid or missing']);
+                echo json_encode(['success' => false, 'errorMessage' => 'User ID is invalid or missing']);
                 return;
             }
             $userId = decryptCipherID($user['sub']);
@@ -53,7 +53,7 @@ class WidgetController extends BaseController
             }
         } catch (Exception $e) {
             http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Internal Server Error']);
+            echo json_encode(['success' => false, 'errorMessage' => $e->getMessage()]);
             return;
         }
     }
@@ -71,19 +71,19 @@ class WidgetController extends BaseController
                 $user = $this->verifyToken();
                 if (!$user) {
                     http_response_code(401);
-                    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+                    echo json_encode(['success' => false, 'errorMessage' => 'Unauthorized']);
                     return;
                 }
                 if (empty($user['sub'])) {
                     http_response_code(400);
-                    echo json_encode(['success' => false, 'message' => 'User ID is invalid or missing']);
+                    echo json_encode(['success' => false, 'errorMessage' => 'User ID is invalid or missing']);
                     return;
                 }
                 $userId = decryptCipherID($user['sub']);
             } else {
                 if (empty($_GET['widget_id'])) {
                     http_response_code(400);
-                    echo json_encode(['success' => false, 'message' => 'Widget ID is invalid or missing']);
+                    echo json_encode(['success' => false, 'errorMessage' => 'Widget ID is invalid or missing']);
                     return;
                 }
             }
@@ -92,7 +92,7 @@ class WidgetController extends BaseController
             $widgetId = decryptCipherID($encryptedWidgetId);
             if (!$widgetId) {
                 http_response_code(400);
-                echo json_encode(['success' => false, 'message' => 'Invalid widget ID']);
+                echo json_encode(['success' => false, 'errorMessage' => 'Invalid widget ID']);
                 return;
             }
             if (!is_null($userId)) {
@@ -120,7 +120,7 @@ class WidgetController extends BaseController
                 echo json_encode([
                     'success' => true,
                     'message' => 'Widgets retrieved successfully',
-                    'widgets' => $widgets
+                    'widget' => $widgets
                 ]);
             } else {
                 http_response_code(404);
@@ -131,7 +131,7 @@ class WidgetController extends BaseController
             }
         } catch (Exception $e) {
             http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Internal Server Error']);
+            echo json_encode(['success' => false, 'errorMessage' =>  $e->getMessage()]);
             return;
         }
     }
@@ -142,12 +142,12 @@ class WidgetController extends BaseController
             $user = $this->verifyToken();
             if (!$user) {
                 http_response_code(401);
-                echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+                echo json_encode(['success' => false, 'errorMessage' => 'Unauthorized']);
                 return;
             }
             if (empty($user['sub'])) {
                 http_response_code(400);
-                echo json_encode(['success' => false, 'message' => 'User ID is invalid or missing']);
+                echo json_encode(['success' => false, 'errorMessage' => 'User ID is invalid or missing']);
                 return;
             }
 
@@ -157,7 +157,7 @@ class WidgetController extends BaseController
 
             if (empty($data['widget_data'])) {
                 http_response_code(400);
-                echo json_encode(['success' => false, 'message' => 'Widget data is required']);
+                echo json_encode(['success' => false, 'errorMessage' => 'Widget data is required']);
                 return;
             }
 
@@ -178,11 +178,11 @@ class WidgetController extends BaseController
                 echo json_encode(['success' => true, 'message' => 'Widget created successfully']);
             } else {
                 http_response_code(500);
-                echo json_encode(['success' => false, 'message' => 'Failed to create widget']);
+                echo json_encode(['success' => false, 'errorMessage' => 'Failed to create widget']);
             }
         } catch (Exception $e) {
             http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Internal Server Error']);
+            echo json_encode(['success' => false, 'errorMessage' =>  $e->getMessage()]);
         }
     }
 
@@ -192,33 +192,34 @@ class WidgetController extends BaseController
             $user = $this->verifyToken();
             if (!$user) {
                 http_response_code(401);
-                echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+                echo json_encode(['success' => false, 'errorMessage' => 'Unauthorized']);
                 return;
             }
             if (empty($user['sub'])) {
                 http_response_code(400);
-                echo json_encode(['success' => false, 'message' => 'User ID is invalid or missing']);
+                echo json_encode(['success' => false, 'errorMessage' => 'User ID is invalid or missing']);
                 return;
             }
             $userId = decryptCipherID($user['sub']);
             $data = json_decode(file_get_contents('php://input'), true);
-            if (empty($data['widget_id']) || empty($data['widget_data'])) {
+            if (empty($data['widget_id']) || empty($data['updated_data']) || empty($data['updated_fields'])) {
                 http_response_code(400);
-                echo json_encode(['success' => false, 'message' => 'Widget ID and data are required']);
+                echo json_encode(['success' => false, 'errorMessage' => 'Widget ID and data are required']);
                 return;
             }
             $widgetId = decryptCipherID($data['widget_id']);
-            $widgetData = $data['widget_data'];
-            if ($this->widgetModel->updateWidget($userId, $widgetId, $widgetData)) {
+            $updatedData = $data['updated_data'];
+            $updatedFields = $data['updated_fields'];
+            if ($this->widgetModel->update($userId, $widgetId, $updatedFields, $updatedData)) {
                 http_response_code(200);
-                echo json_encode(['success' => true, 'message' => 'Widget updated successfully']);
+                echo json_encode(['success' => true, 'widgetId' => $widgetId, 'userId'=>$userId,'message' => 'Widget updated successfully']);
             } else {
                 http_response_code(500);
-                echo json_encode(['success' => false, 'message' => 'Failed to update widget']);
+                echo json_encode(['success' => false, 'errorMessage' => 'Failed to update widget']);
             }
         } catch (Exception $e) {
             http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Internal Server Error']);
+            echo json_encode(['success' => false, "errorMessage"=>$e->getMessage()]);
         }
     }
 
@@ -228,19 +229,19 @@ class WidgetController extends BaseController
             $user = $this->verifyToken();
             if (!$user) {
                 http_response_code(401);
-                echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+                echo json_encode(['success' => false, 'errorMessage' => 'Unauthorized']);
                 return;
             }
             if (empty($user['sub'])) {
                 http_response_code(400);
-                echo json_encode(['success' => false, 'message' => 'User ID is invalid or missing']);
+                echo json_encode(['success' => false, 'errorMessage' => 'User ID is invalid or missing']);
                 return;
             }
             $userId = decryptCipherID($user['sub']);
             $data = json_decode(file_get_contents('php://input'), true);
             if (empty($data['widget_id'])) {
                 http_response_code(400);
-                echo json_encode(['success' => false, 'message' => 'Widget ID is required']);
+                echo json_encode(['success' => false, 'errorMessage' => 'Widget ID is required']);
                 return;
             }
             $widgetId = decryptCipherID($data['widget_id']);
@@ -249,11 +250,11 @@ class WidgetController extends BaseController
                 echo json_encode(['success' => true, 'message' => 'Widget deleted successfully', 'method' => 'delete']);
             } else {
                 http_response_code(500);
-                echo json_encode(['success' => false, 'message' => 'Failed to delete widget']);
+                echo json_encode(['success' => false, 'errorMessage' => 'Failed to delete widget']);
             }
         } catch (Exception $e) {
             http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Internal Server Error']);
+            echo json_encode(['success' => false, 'errorMessage' => $e->getMessage()]);
         }
     }
 }

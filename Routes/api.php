@@ -21,10 +21,10 @@ if (strpos($requestUri, '/signup') !== false) {
     $route = 'topics';
 } elseif (strpos($requestUri, '/feeds') !== false) {
     $route = 'feeds';
-} elseif (strpos($requestUri, '/widgets/widgetID') !== false) {
-    $route = 'widget';
 } elseif (strpos($requestUri, '/widgets') !== false) {
     $route = 'widgets';
+} elseif (strpos($requestUri, '/widget') !== false) {
+    $route = 'widget';
 } else {
     echo json_encode(["message" => "Route not found"]);
     exit;
@@ -51,7 +51,7 @@ switch ($routeMethod) {
     case 'widget_GET':
         $widgetController->getWidgetById();
         break;
-    case 'widget_POST':
+    case 'widgets_POST':
         $widgetController->createWidget();
         break;
     case 'widget_PUT':
