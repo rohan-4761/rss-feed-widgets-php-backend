@@ -42,6 +42,12 @@ class UserController extends BaseController
                 $user['id'] = generateCipherID($user['id']);
                 unset($user['password']);
                 $token = $this->generateToken($user);
+                setcookie("access_token", $token, [
+                        'expires' => time() + 3600,
+                    'httponly' => true,
+                    'secure' => true,
+                    'samesite' => 'None'
+                ]);
                 header("Access-Control-Expose-Headers: Authorization");
                 header("Authorization: Bearer $token");
                 header('Content-Type: application/json');
@@ -85,6 +91,11 @@ class UserController extends BaseController
                     $user['id'] = generateCipherID($user['id']);
                     unset($user['password']);
                     $token = $this->generateToken($user);
+                    setcookie("access_token", $token, [
+                    'httponly' => true,
+                    'secure' => true,
+                    'samesite' => 'None'
+                ]);
                     header("Access-Control-Expose-Headers: Authorization");
                     header("Authorization: Bearer $token");
                     header('Content-Type: application/json');
